@@ -3,6 +3,7 @@ use serde::{
     Deserialize, Deserializer, Serialize, Serializer,
 };
 use std::fmt;
+use faster_hex::hex_decode;
 
 /// Raw bytes wrapper
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
@@ -48,7 +49,8 @@ impl<'a> Visitor<'a> for BytesVisitor {
         E: Error,
     {
         if value.len() >= 2 && &value[0..2] == "0x" {
-            let bytes = hex::decode(&value[2..]).map_err(|e| Error::custom(format!("Invalid hex: {}", e)))?;
+            let mut bytes = Vec::with_capacity((value.len() - 2) >> 1);
+            hex_decode(value[2..].as_bytes(), &mut bytes).map_err(|e| Error::custom(format!("Invalid hex: {}", e)))?;
             Ok(Bytes(bytes))
         } else {
             Err(Error::invalid_value(Unexpected::Str(value), &"0x prefix"))
